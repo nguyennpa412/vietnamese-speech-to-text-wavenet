@@ -1,15 +1,15 @@
 # -*- coding: utf-8 -*-
 import os
-import recognize_module
-import data
 
 from flask import Flask, render_template, request
+from werkzeug.utils import secure_filename
 app = Flask(__name__, template_folder='./')
 
 def getLabel(filepath):
-    labelArr = recognize_module.recognize(filepath)
-    for index_list in labelArr:
-        label = data.index2str(index_list)
+    os.system('python recognize.py --file %s' % filepath)
+    outputfile = open('output.txt', 'r')
+    label = outputfile.readline()
+    outputfile.close()
     return label
 
 @app.route('/')

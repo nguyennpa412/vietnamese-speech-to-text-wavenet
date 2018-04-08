@@ -70,3 +70,10 @@ with tf.Session() as sess:
 
     # print label
     data.print_index(label)
+
+    for index_list in label:
+        output = data.index2str(index_list)
+		
+    outputfile = open('output.txt', 'w')
+    outputfile.write(output) 
+    outputfile.close()

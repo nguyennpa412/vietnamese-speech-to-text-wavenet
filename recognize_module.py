@@ -53,7 +53,6 @@ def recognize(filepath):
 
 	# run network
 	with tf.Session() as sess:
-
 		# init variables
 		tf.sg_init(sess)
 
