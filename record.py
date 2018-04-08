@@ -132,6 +132,5 @@ import sugartensor as tf
 import recognize_module
 import data
 
-tf.sg_arg_def(file=('recorded.wav', 'speech wave file to recognize.'))
 print('Recognizing...')
-data.print_index(recognize_module.recognize())
+data.print_index(recognize_module.recognize('recorded.wav'))

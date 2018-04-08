@@ -7,9 +7,7 @@ import librosa
 from model import *
 import data
 
-__author__ = 'namju.kim@kakaobrain.com'
-
-def recognize():
+def recognize(filepath):
 	# set log level to debug
 	tf.sg_verbosity(10)
 
@@ -46,7 +44,7 @@ def recognize():
 	#
 
 	# command line argument for input wave file path
-	# tf.sg_arg_def(file=('', 'speech wave file to recognize.'))
+	tf.sg_arg_def(file=(filepath, 'speech wave file to recognize.'))
 
 	# load wave file
 	wav, _ = librosa.load(tf.sg_arg().file, mono=True, sr=16000)
@@ -70,6 +68,6 @@ def recognize():
 		
 		return label
 		
-#tf.sg_arg_def(file=('', 'speech wave file to recognize.'))
-#print('Recognizing...')
-#data.print_index(recognize())
+# tf.sg_arg_def(file=('upload.wav', 'speech wave file to recognize.'))
+# print('Recognizing...')
+# data.print_index(recognize())

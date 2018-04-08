@@ -7,6 +7,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
   </head>
  
   <body>
@@ -25,14 +27,15 @@
         
             <div id="collapseOne" class="collapse show" aria-labelledby="headingOne" data-parent="#accordion">
               <div class="card-body">
-                <form id="file" action="app.py">
+                <form id='recognize-file' enctype="multipart/form-data">
                     <div class="input-group mb-3">
-                      <input type="file" id="filepath" name="filepath" class="form-control" accept=".wav" required>
+                      <input type="file" id="input" name="input" class="form-control" accept=".wav" required>
                       <div class="input-group-append">
                         <button class="btn btn-outline-secondary" type="submit">Submit</button>
                       </div>
                     </div>
                 </form>
+                <audio id='sound' name='sound' control></audio>
                 <div id="file-res"></div>
               </div>
             </div>
@@ -59,33 +62,54 @@
     </div>
 
     <script>
-      $("#file").submit(function( event ) {
-        event.preventDefault();
-      
-        var $form = $( this ),
-          filepath = $form.find( "#filepath" ).val(),
-          url = $form.attr( "action" );
+      // input.onchange = function(){
+      //   var sound = document.getElementById('sound');
+      //   var reader = new FileReader();
+      //   reader.onload = function(e) {
+      //     sound.src = this.result;
+      //     sound.controls = true;
+      //     sound.play();
+      //     };
+      //   reader.readAsDataURL(this.files[0]);
+      // }
 
-        //console.log(filepath)
-      
+      $("#recognize-file").submit(function( event ) {
+        event.preventDefault();
+
+        var input = document.getElementById("input")
+
+        file = input.files[0];
+
+        var sound = document.getElementById('sound');
+        var reader = new FileReader();
+        reader.onload = function(e) {
+          sound.src = this.result;
+          sound.controls = true;
+        };
+        reader.readAsDataURL(file);
+
+        $('#file-res').html('Recognizing...');
+
+        var formdata = new FormData();
+        formdata.append("file", file);
+
         $.ajax({
-          url: url,
+          url: "/",
           type: "post",
           dataType: "html",
-          data: {
-            command: "file",
-            id: filepath
-          },
+          data: formdata,
+          encode: true,
+          processData: false,
+          cache: false,
+          contentType: false,
 
           success: function( data ){
             console.log(data)
-            // if (data == 'Error') alert('Error');
-            // else {
-            //   console.log($(data));
-            //   $('#table-container').html($(data)[0]);
-            //   $('.select-id').html($($(data)[1]).children());
-            //   $('.select-year').html($($(data)[2]).children());
-            // }
+            $('#file-res').html(data);
+          },
+          error: function(error) {
+            console.log(error);
+            $('#file-res').html('Error');
           }
         });
       });
