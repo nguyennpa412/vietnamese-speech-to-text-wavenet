@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Vietnamese Speech to Text</title>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+
+    <style>
+      body {
+        background-color:darkgrey;
+      }
+
+      canvas {
+        width: 100%;
+        height: 100px;
+        border-top: 1px solid black;
+        border-bottom: 1px solid black;
+      }
+
+      .tab-content {
+          margin-top: 10px;
+          padding-top: 10px;
+          padding-bottom: 10px;
+          margin-bottom: 10px;
+          background-color: white;
+      }
+
+      li {
+          background-color: white;
+      }
+
+      #record-sound-section, #file-res, #record-res, #file-sound {
+          margin-top: 10px;
+          margin-bottom: 10px;
+      }
+    </style>
+  </head>
+ 
+  <body>
+
+    <div class="container">
+      <div class="jumbotron">
+        <h2>Vietnamese Speech to Text - Wavenet</h2>
+        <ul class="nav nav-tabs nav-justified">
+          <li class="active"><a data-toggle="tab" href="#training-model-info"><h3>Training Model Information</h3></a></li>
+          <li><a data-toggle="tab" href="#language-model-info"><h3>Language Model Information</h3></a></li>
+        </ul>
+
+        <div class="tab-content">
+          <div id="training-model-info" class="tab-pane fade in active">
+            <h4 style="margin-left: 20px">
+              - <strong>Train set</strong>: 45182 samples ( > 41hrs) <br/>
+              - <strong>Test set</strong>: 5006 samples ( > 4hrs) <br/>
+              - <strong>Epoch</strong>: 20 <br/>
+              - <strong>Step</strong>: 59283 <br/>
+              - <strong>Training loss</strong>: 11.84 <br/>
+              - <strong>Testing loss</strong>: 19.09
+            </h4>
+          </div>
+          <div id="language-model-info" class="tab-pane fade">
+            <h4 style="margin-left: 20px">
+              - <strong>Source</strong>: <a href="https://vnexpress.net/" target="blank">VnExpress</a> <br/>
+              - <strong>Categories</strong>: Thời sự, Góc nhìn, Thế giới, Kinh doanh, Giải trí, Thể thao, Pháp luật, Giáo dục, Sức khỏe, Gia đình, Du lịch, Khoa học, Số hóa, Xe, Cộng đồng, Tâm sự <br/>
+              - <strong>Number of articles</strong>: 198,139 <br/>
+              - <strong>Number of different words</strong>: 147,378 <br/>
+              - <strong>Total number of words</strong>: 77,907,100  <br/>
+              - <strong>Top 10 common words</strong>: <br/>
+              <h5>
+                <table class="table table-bordered table-striped table-responsive table-hover" style="margin: 0 auto; width: 80%; text-align: center">
+                  <thead style="background-color: #32383e">
+                    <tr style="color: white">
+                      <th style="text-align: center">#</th>
+                      <th style="text-align: center">Word</th>
+                      <th style="text-align: center">Counts</th>
+                      <th style="text-align: center">#</th>
+                      <th style="text-align: center">Word</th>
+                      <th style="text-align: center">Counts</th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    <tr><td>1</td><td>'và'</td><td>924063</td><td>6</td><td>'tôi'</td><td>655914</td></tr>
+                    <tr><td>2</td><td>'có'</td><td>866613</td><td>7</td><td>'một'</td><td>636718</td></tr>
+                    <tr><td>3</td><td>'của'</td><td>784810</td><td>8</td><td>'người'</td><td>620049</td></tr>
+                    <tr><td>4</td><td>'không'</td><td>733558</td><td>9</td><td>'cho'</td><td>595462</td></tr>
+                    <tr><td>5</td><td>'là'</td><td>685747</td><td>10</td><td>'trong'</td><td>587368</td></tr>
+                  </tbody>
+                </table>
+              </h5>
+            </h4>
+          </div>
+        </div>        
+      </div>
+
+      <div class="jumbotron">
+        <ul class="nav nav-pills nav-justified">
+          <li class="active"><a data-toggle="pill" href="#file">Reconizing by Files</a></li>
+          <li><a data-toggle="pill" href="#record">Reconizing by Recording</a></li>
+        </ul>
+
+        <div class="tab-content">
+          <div id="file" class="tab-pane fade in active">
+            <form id='recognize-file' enctype="multipart/form-data">
+              <div class="input-group">
+                <input type="file" id="input-file" name="input-file" class="form-control" accept="audio/*" required>
+                <div class="input-group-btn">
+                  <button class="btn btn-default" type="submit">Submit</button>
+                </div>
+              </div>
+            </form>
+            <audio id="file-sound" name="file-sound" control></audio>
+            <div id="file-res"></div>
+          </div>
+          <div id="record" class="tab-pane fade">
+            <form id='recognize-record' enctype="multipart/form-data">
+              <canvas id="visualizer" name="visualizer" ></canvas>
+              <div class="btn-group btn-group-justified" role="group">
+                <div class="btn-group" role="group">
+                  <button id="record-btn" type="button" class="btn btn-default btn-outline">
+                    <i id="record-icon" class="glyphicon glyphicon-record"></i>
+                  </button>
+                </div>
+                <div class="btn-group" role="group">
+                  <button id="stop-btn" type="button" class="btn btn-default btn-outline">
+                    <i id="stop-icon" class="glyphicon glyphicon-stop"></i>
+                  </button>
+                </div>
+              </div>
+              <div id="record-sound-section"></div>
+            </form>
+            <div id="record-res"></div>
+          </div>
+        </div>
+
+        <button class="btn btn-primary" type="button" data-toggle="collapse" data-target="#sample-audio" aria-expanded="false" aria-controls="sample-audio">
+          Sample
+        </button>
+        <div class="collapse" id="sample-audio">
+          <audio controls>
+            <source src="https://s0.vocaroo.com/media/download_temp/Vocaroo_s0eWZPBnjWH1.mp3" type="audio/mp3">
+          Your browser does not support the audio element.
+          </audio>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      var recordData
+
+      $('#record-btn').click(function() {
+        $( this ).css( "background-color", "white" )
+        $('#record-icon').css('color', 'red')
+        $('#stop-icon').css('color', '#333')
+      })
+
+      $('#stop-btn').click(function() {
+        $( this ).css( "background-color", "white" )
+        $('#stop-icon').css('color', 'red')
+        $('#record-icon').css('color', '#333')
+      })
+
+      $('#record-btn').mouseenter(function() {
+        $( this ).css( "background-color", "#e6e6e6" )
+      }).mouseleave(function() {
+        $( this ).css( "background-color", "white" )
+      })
+      
+      $('#stop-btn').mouseenter(function() {
+        $( this ).css( "background-color", "#e6e6e6" )
+      }).mouseleave(function() {
+        $( this ).css( "background-color", "white" )
+      })
+
+      $('#input-file').change(function() {
+        var input = document.getElementById("input-file")
+
+        file = input.files[0]
+        console.log(file)
+
+        var sound = document.getElementById("file-sound")
+        var reader = new FileReader()
+        reader.onload = function(e) {
+          sound.src = this.result
+          sound.controls = true
+        }
+        reader.readAsDataURL(file)
+      })
+
+      $("#recognize-file").submit(function( event ) {
+        event.preventDefault()
+
+        $('#file-res').html(`
+          <div>
+            <div>Recognizing...</div>
+            <div class="progress">
+              <div 
+                class="progress-bar progress-bar-striped active" 
+                role="progressbar" 
+                aria-valuenow="100" 
+                aria-valuemin="0" 
+                aria-valuemax="100" 
+                style="width: 100%"
+              ></div>
+            </div>
+          </div>
+        `)
+
+        var formdata = new FormData()
+        formdata.append("file", file)
+
+        $.ajax({
+          url: "/",
+          type: "post",
+          dataType: "html",
+          data: formdata,
+          encode: true,
+          processData: false,
+          cache: false,
+          contentType: false,
+
+          success: function( data ){
+            console.log(data)
+            $('#file-res').html(data)
+          },
+          error: function(error) {
+            console.log(error)
+            $('#file-res').html('Error')
+          }
+        })
+      })
+
+      navigator.getUserMedia = (  navigator.getUserMedia ||
+                                  navigator.webkitGetUserMedia ||
+                                  navigator.mozGetUserMedia ||
+                                  navigator.msGetUserMedia )
+
+      var record = document.querySelector('#record-btn')
+      var stop = document.querySelector('#stop-btn')
+      var audioSection = $('#record-sound-section')
+      var canvas = document.querySelector('#visualizer')
+
+      var audioCtx = new (window.AudioContext || webkitAudioContext)();
+      var canvasCtx = canvas.getContext("2d")
+
+      if (navigator.getUserMedia) {
+        console.log('getUserMedia supported.');
+        navigator.getUserMedia (
+          // constraints - only audio needed for this app
+          {
+            audio: true
+          },
+
+          // Success callback
+          function(stream) {
+            var mediaRecorder = new MediaRecorder(stream);
+
+            visualize(stream);
+
+            record.onclick = function() {
+              mediaRecorder.start();
+              console.log(mediaRecorder.state);
+              console.log("recorder started");
+              audioSection.html('Recording...')
+            }
+
+            stop.onclick = function() {
+              mediaRecorder.stop();
+              console.log(mediaRecorder.state);
+              console.log("recorder stopped");
+            }
+
+            mediaRecorder.ondataavailable = function(e) {
+              console.log("data available");
+
+              var clipName = prompt('Enter a name for your sound clip');
+
+              var audioURL = window.URL.createObjectURL(e.data);
+
+              recordData = e.data
+
+              console.log(audioURL)
+
+              audioSection.html(`
+              <div class="input-group" id="record-sound-group">
+                <span class="input-group-addon">${clipName || 'recorded'}</span>
+                <audio id="record-sound" name="record-sound" control></audio>
+                <span class="input-group-btn">
+                  <button class="btn btn-default" type="submit">Submit</button>
+                </span>
+              </div>
+              `);
+              
+              var sound = document.getElementById("record-sound")
+              sound.src = audioURL
+              sound.controls = true
+            }
+          },
+
+          // Error callback
+          function(err) {
+            console.log('The following gUM error occured: ' + err);
+          }
+        );
+      } else {
+        console.log('getUserMedia not supported on your browser!');
+      }
+
+      function visualize(stream) {
+        var source = audioCtx.createMediaStreamSource(stream);
+
+        var analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 2048;
+        var bufferLength = analyser.frequencyBinCount;
+        var dataArray = new Uint8Array(bufferLength);
+
+        source.connect(analyser);
+        //analyser.connect(audioCtx.destination);
+        
+        WIDTH = canvas.width
+        HEIGHT = canvas.height;
+
+        draw()
+
+        function draw() {
+
+          requestAnimationFrame(draw);
+
+          analyser.getByteTimeDomainData(dataArray);
+
+          canvasCtx.fillStyle = 'rgb(200, 200, 200)';
+          canvasCtx.fillRect(0, 0, WIDTH, HEIGHT);
+
+          canvasCtx.lineWidth = 1.5;
+          canvasCtx.strokeStyle = 'rgb(0, 0, 0)';
+
+          canvasCtx.beginPath();
+
+          var sliceWidth = WIDTH * 1.0 / bufferLength;
+          var x = 0;
+
+
+          for(var i = 0; i < bufferLength; i++) {
+      
+            var v = dataArray[i] / 128.0;
+            var y = v * HEIGHT/2;
+
+            if(i === 0) {
+              canvasCtx.moveTo(x, y);
+            } else {
+              canvasCtx.lineTo(x, y);
+            }
+
+            x += sliceWidth;
+          }
+
+          canvasCtx.lineTo(canvas.width, canvas.height/2);
+          canvasCtx.stroke();
+        }
+      }
+
+      $("#recognize-record").submit(function( event ) {
+        event.preventDefault()
+
+        $('#record-res').html(`
+          <div>
+            <div>Recognizing...</div>
+            <div class="progress">
+              <div 
+                class="progress-bar progress-bar-striped active" 
+                role="progressbar" 
+                aria-valuenow="100" 
+                aria-valuemin="0" 
+                aria-valuemax="100" 
+                style="width: 100%"
+              ></div>
+            </div>
+          </div>
+        `)
+
+        var formdata = new FormData()
+        formdata.append('file', recordData)
+
+        $.ajax({
+          url: "/",
+          type: "post",
+          dataType: "html",
+          data: formdata,
+          encode: true,
+          processData: false,
+          cache: false,
+          contentType: false,
+
+          success: function( data ){
+            console.log(data)
+            $('#record-res').html(data)
+          },
+          error: function(error) {
+            console.log(error)
+            $('#record-res').html('Error')
+          }
+        })
+      })
+    </script>
+  </body>
+</html>
