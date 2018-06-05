@@ -89,7 +89,7 @@
         ```
 3. **Heroku Web App**:
     * You can find our Web App here: https://thesis-vnmese-s2t-api-heroku.herokuapp.com/
-    * But because of lacking of memory on our Heroku server, size of the language model using on the site will be much smaller than the one running on localhost.
+    * But due to the lack of memory on our Heroku server, size of the language model using on the site is much smaller than the one running on your localhost here.
 
 ### Future Works:
 * **Language Model**: Upgrading from single word to compound word.
