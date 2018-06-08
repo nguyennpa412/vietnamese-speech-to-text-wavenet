@@ -85,7 +85,7 @@
     * Put this [VnExpress data](https://drive.google.com/file/d/1WA-LX3AZif_U4NMO2CXWxgJxsrXv82Ol/view?usp=sharing) into `/web app` folder to run the Web App.
     * Run this to open the Web App on your localhost, you can test our model there:  
         ```
-        /web app$ FLASKASK_APP=app.py flask run
+        /web app$ FLASK_APP=app.py flask run
         ```
 3. **Heroku Web App**:
     * You can find our Web App here: https://thesis-vnmese-s2t-api-heroku.herokuapp.com/
