@@ -47,12 +47,12 @@
       <div class="jumbotron">
         <h2>Vietnamese Speech to Text - Wavenet</h2>
         <ul class="nav nav-tabs nav-justified">
-          <li class="active"><a data-toggle="tab" href="#training-model-info"><h3>Training Model Information</h3></a></li>
+          <li class="active"><a data-toggle="tab" href="#trained-model-info"><h3>Trained Model Information</h3></a></li>
           <li><a data-toggle="tab" href="#language-model-info"><h3>Language Model Information</h3></a></li>
         </ul>
 
         <div class="tab-content">
-          <div id="training-model-info" class="tab-pane fade in active">
+          <div id="trained-model-info" class="tab-pane fade in active">
             <h4 style="margin-left: 20px">
               - <strong>Train set</strong>: 45182 samples ( > 41hrs) <br/>
               - <strong>Test set</strong>: 5006 samples ( > 4hrs) <br/>
@@ -152,6 +152,27 @@
     <script>
       var recordData
 
+      var fileTotalSeconds = 0;
+
+      var recordTotalSeconds = 0;
+
+      function getFileTime() {
+        return fileTotalSeconds
+      }
+
+      function getRecordTime() {
+        return recordTotalSeconds
+      }
+
+      function pad(val) {
+        var valString = val + "";
+        if (valString.length < 2) {
+          return "0" + valString;
+        } else {
+          return valString;
+        }
+      }
+
       $('#record-btn').click(function() {
         $( this ).css( "background-color", "white" )
         $('#record-icon').css('color', 'red')
@@ -197,6 +218,7 @@
         $('#file-res').html(`
           <div>
             <div>Recognizing...</div>
+            <label id="file-minutes">00</label>:<label id="file-seconds">00</label>
             <div class="progress">
               <div 
                 class="progress-bar progress-bar-striped active" 
@@ -209,6 +231,16 @@
             </div>
           </div>
         `)
+
+        var minutesLabel = document.getElementById("file-minutes");
+        var secondsLabel = document.getElementById("file-seconds");
+        var fileInterval = setInterval(setFileTime, 1000);
+
+        function setFileTime() {
+          ++fileTotalSeconds;
+          secondsLabel.innerHTML = pad(fileTotalSeconds % 60);
+          minutesLabel.innerHTML = pad(parseInt(fileTotalSeconds / 60));
+        }
 
         var formdata = new FormData()
         formdata.append("file", file)
@@ -224,8 +256,27 @@
           contentType: false,
 
           success: function( data ){
+            data = JSON.parse(data)
             console.log(data)
-            $('#file-res').html(data)
+            $('#file-res').html(`
+              <div>Elapsed time: ${pad(parseInt(getFileTime()/60))}:${pad(getFileTime()%60)}</div>
+              <div>
+                <table class="table table-bordered table-striped table-responsive table-hover" style="margin: 10px auto; width: 80%; text-align: center">
+                  <thead style="background-color: #32383e">
+                    <tr style="color: white">
+                      <th style="text-align: center" colspan="2">Result</th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    <tr><td style="width: 50%"><strong>Wavenet result</strong></td><td>${data.result[0]}</td></tr>
+                    <tr><td style="width: 50%"><strong>Corrected by Language Model</strong></td><td>${data.result[1]}</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            `)
+            clearInterval(fileInterval)
+            fileTotalSeconds = 0
           },
           error: function(error) {
             console.log(error)
@@ -369,6 +420,7 @@
         $('#record-res').html(`
           <div>
             <div>Recognizing...</div>
+            <label id="record-minutes">00</label>:<label id="record-seconds">00</label>
             <div class="progress">
               <div 
                 class="progress-bar progress-bar-striped active" 
@@ -381,6 +433,16 @@
             </div>
           </div>
         `)
+
+        var minutesLabel = document.getElementById("record-minutes");
+        var secondsLabel = document.getElementById("record-seconds");
+        var recordInterval = setInterval(setRecordTime, 1000);
+
+        function setRecordTime() {
+          ++recordTotalSeconds;
+          secondsLabel.innerHTML = pad(recordTotalSeconds % 60);
+          minutesLabel.innerHTML = pad(parseInt(recordTotalSeconds / 60));
+        }
 
         var formdata = new FormData()
         formdata.append('file', recordData)
@@ -396,8 +458,27 @@
           contentType: false,
 
           success: function( data ){
+            data = JSON.parse(data)
             console.log(data)
-            $('#record-res').html(data)
+            $('#record-res').html(`
+              <div>Elapsed time: ${pad(parseInt(getRecordTime()/60))}:${pad(getRecordTime()%60)}</div>
+              <div>
+                <table class="table table-bordered table-striped table-responsive table-hover" style="margin: 10px auto; width: 80%; text-align: center">
+                  <thead style="background-color: #32383e">
+                    <tr style="color: white">
+                      <th style="text-align: center" colspan="2">Result</th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    <tr><td style="width: 50%"><strong>Wavenet result</strong></td><td>${data.result[0]}</td></tr>
+                    <tr><td style="width: 50%"><strong>Corrected by Language Model</strong></td><td>${data.result[1]}</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            `)
+            clearInterval(recordInterval);
+            recordTotalSeconds = 0
           },
           error: function(error) {
             console.log(error)

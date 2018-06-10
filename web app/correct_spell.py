@@ -8,8 +8,6 @@ from collections import Counter
 from decimal import Decimal, getcontext
 getcontext().prec = 20
 
-number_of_articles = 198139
-
 letters = [ 'a', 'á', 'à', 'ả', 'ã', 'ạ',
             'ă', 'ắ', 'ằ', 'ẳ', 'ẵ', 'ặ',
             'â', 'ấ', 'ầ', 'ẩ', 'ẫ', 'ậ',
@@ -44,7 +42,7 @@ def correction(word):
 def candidates(word): 
     "Generate possible spelling corrections for word."
     N = sum(WORDS.values())
-    if (WORDS[word] < N // (number_of_articles * 5)):
+    if (WORDS[word] < N // 1000000):
         return (known(edits1(word)) or known(edits2(word)) or [word])
     else:
         return (known([word]) or known(edits1(word)) or known(edits2(word)) or [word])
@@ -79,8 +77,9 @@ def get_best_sentence(sentence):
     words = sentence.split(' ')
     res = []
     for word in words:
-        best_word = get_best_word(word)
-        res.append(best_word)
+        if (word):
+            best_word = get_best_word(word)
+            res.append(best_word)
     res = ' '.join(res)
     return res
 

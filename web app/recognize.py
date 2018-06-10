@@ -72,10 +72,10 @@ with tf.Session() as sess:
     for index_list in label:
         output = data.index2str(index_list)
 
-print('Result: ' + output)
-output = get_best_sentence(output).encode('utf-8')
-print('Corrected: ' + output)
+print('Wavenet result: ' + output)
+correctedOutput = get_best_sentence(output).encode('utf-8')
+print('Corrected by Language Model: ' + correctedOutput)
     
 outputfile = open('output.txt', 'w')
-outputfile.write(output) 
+outputfile.write(output + '\n' + correctedOutput)
 outputfile.close()

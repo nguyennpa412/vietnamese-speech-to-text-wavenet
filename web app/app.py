@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # import os
 import subprocess
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, jsonify
 from werkzeug.utils import secure_filename
 # from correct_spell import get_best_sentence
 app = Flask(__name__, template_folder='./')
@@ -10,10 +10,15 @@ def getLabel(filepath):
     # os.system('python recognize.py --file %s' % filepath)
     subprocess.call(['python', 'recognize.py', '--file', filepath])
     outputfile = open('output.txt', 'r')
-    label = outputfile.readline()
+    records = outputfile.readlines()
+    res = []
+    for record in records:
+        # print(record)
+        res.append(record)
     outputfile.close()
     # label = get_best_sentence(label).encode('utf-8')
-    return label
+    # print(res)
+    return res
 
 def transform(filename):
     # os.system('ffmpeg -i %s -ar 16000 -ac 1 -ab 256000 upload/upload.wav -y' % filename)
@@ -33,8 +38,8 @@ def recognizeFile():
     file.save(filename)
     transform(filename)
 
-    label = getLabel('upload/upload.wav')
-    return label
+    res = getLabel('upload/upload.wav')
+    return jsonify(result=res)
 
 if __name__ == '__main__':
     app.run()
