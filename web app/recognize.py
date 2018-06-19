@@ -1,13 +1,12 @@
 # -*- coding: utf-8 -*-
 import os
+import sys
 os.environ['TF_CPP_MIN_LOG_LEVEL']='2'
 import sugartensor as tf
 import numpy as np
 import librosa
 from model import *
 import data
-
-from correct_spell import get_best_sentence
 
 # set log level to debug
 tf.sg_verbosity(10)
@@ -52,7 +51,7 @@ wav, _ = librosa.load(tf.sg_arg().file, mono=True, sr=16000)
 # get mfcc feature
 mfcc = np.transpose(np.expand_dims(librosa.feature.mfcc(wav, 16000), axis=0), [0, 2, 1])
 
-print('Recognizing...')
+print('\n Recognizing... \n')
 
 # run network
 with tf.Session() as sess:
@@ -72,10 +71,8 @@ with tf.Session() as sess:
     for index_list in label:
         output = data.index2str(index_list)
 
-print('Wavenet result: ' + output)
-correctedOutput = get_best_sentence(output).encode('utf-8')
-print('Corrected by Language Model: ' + correctedOutput)
-    
-outputfile = open('output.txt', 'w')
-outputfile.write(output + '\n' + correctedOutput)
+print('\n Wavenet result: \n' + output + '\n')
+filetype = sys.argv[3]
+outputfile = open('res_wavenet_%s.txt' % filetype, 'w')
+outputfile.write(output)
 outputfile.close()

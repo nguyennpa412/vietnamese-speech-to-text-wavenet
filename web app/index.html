@@ -114,8 +114,17 @@
               </div>
             </form>
             <audio id="file-sound" name="file-sound" control></audio>
-            <div id="file-res"></div>
+            <div id="file-res">
+              <div id="file-time"></div>
+              <div id="file-upload"></div>
+              <div id="file-recognize"></div>
+              <div id="file-correct"></div>
+              <div id="file-google"></div>
+              <div id="file-progress-bar"></div>
+              <div id="file-res-table"></div>
+            </div>
           </div>
+
           <div id="record" class="tab-pane fade">
             <form id='recognize-record' enctype="multipart/form-data">
               <canvas id="visualizer" name="visualizer" ></canvas>
@@ -133,7 +142,15 @@
               </div>
               <div id="record-sound-section"></div>
             </form>
-            <div id="record-res"></div>
+            <div id="record-res">
+              <div id="record-time"></div>
+              <div id="record-upload"></div>
+              <div id="record-recognize"></div>
+              <div id="record-correct"></div>
+              <div id="record-google"></div>
+              <div id="record-progress-bar"></div>
+              <div id="record-res-table"></div>
+            </div>
           </div>
         </div>
 
@@ -155,6 +172,180 @@
       var fileTotalSeconds = 0;
 
       var recordTotalSeconds = 0;
+
+      function getResTable(type, wavenet, lm, google) {
+        $(`#${type}-time`).html('')
+        $(`#${type}-progress-bar`).html('')
+
+        $(`#${type}-res-table`).html(`
+          <div><strong>Elapsed time</strong>: ${pad(parseInt(type == 'file' ? getFileTime()/60 : getRecordTime()/60))}:${pad(type == 'file' ? getFileTime()%60 : getRecordTime()%60)}</div>
+          <div>
+            <table class="table table-bordered table-striped table-responsive table-hover" style="margin: 10px auto; width: 80%; text-align: center">
+              <thead style="background-color: #32383e">
+                <tr style="color: white">
+                  <th style="text-align: center" colspan="2">Result</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                <tr><td style="width: 50%"><strong>Wavenet result</strong></td><td>${wavenet}</td></tr>
+                <tr><td style="width: 50%"><strong>Corrected by Language Model</strong></td><td>${lm}</td></tr>
+                <tr><td style="width: 50%"><strong>Google transcript</strong></td><td>${google}</td></tr>
+              </tbody>
+            </table>
+          </div>
+        `)
+      }
+
+      function getError(type) {
+        $(`#${type}-time`).html('')
+        $(`#${type}-progress-bar`).html('')
+
+        $(`#${type}-res-table`).html(`Error!`)
+      }
+
+      function runMain(type, formdata) {
+        $(`#${type}-time`).html(`
+          <label id="${type}-minutes">00</label>:<label id="${type}-seconds">00</label>
+        `)
+
+        $(`#${type}-upload`).html(``)
+        $(`#${type}-recognize`).html(``)
+        $(`#${type}-correct`).html(``)
+        $(`#${type}-google`).html(``)
+        $(`#${type}-res-table`).html(``)
+
+        $(`#${type}-progress-bar`).html(`
+          <div class="progress">
+            <div 
+              class="progress-bar progress-bar-striped active" 
+              role="progressbar" 
+              aria-valuenow="100" 
+              aria-valuemin="0" 
+              aria-valuemax="100" 
+              style="width: 100%"
+            ></div>
+          </div>
+        `)
+
+        var minutesLabel = document.getElementById(`${type}-minutes`);
+        var secondsLabel = document.getElementById(`${type}-seconds`);
+        type == 'file' ? 
+        fileInterval = setInterval(setFileTime, 1000) : 
+        recordInterval = setInterval(setRecordTime, 1000)
+
+        function setFileTime() {
+          ++fileTotalSeconds;
+          secondsLabel.innerHTML = pad(fileTotalSeconds % 60);
+          minutesLabel.innerHTML = pad(parseInt(fileTotalSeconds / 60));
+        }
+
+        function setRecordTime() {
+          ++recordTotalSeconds;
+          secondsLabel.innerHTML = pad(recordTotalSeconds % 60);
+          minutesLabel.innerHTML = pad(parseInt(recordTotalSeconds / 60));
+        }
+
+        $(`#${type}-upload`).html('Uploading ... ')
+
+        $.ajax({
+          url: `/upload${type}`,
+          type: "post",
+          dataType: "html",
+          data: formdata,
+          encode: true,
+          processData: false,
+          cache: false,
+          contentType: false,
+
+          success: function( data ){
+            console.log('Uploaded!')
+            console.log(data)
+            $(`#${type}-upload`).html(`Uploading ... <strong>DONE!</strong> (${data} s)`)
+            $(`#${type}-recognize`).html('Recognizing ... ')
+
+            $.ajax({
+              url: `/wavenet${type}`,
+              type: "post",
+              dataType: "html",
+              data: '',
+
+              success: function( data ){
+                data = JSON.parse(data)
+                console.log('Recognized!')
+                console.log(data.result[0])
+                console.log(data.result[1])
+
+                type == 'file' ? file_wavenet = data.result[0] : record_wavenet = data.result[0]
+
+                $(`#${type}-recognize`).html(`Recognizing ... <strong>DONE!</strong> (${data.result[1]} s)`)
+                $(`#${type}-correct`).html('Correcting ... ')
+                
+                $.ajax({
+                  url: `/lm${type}`,
+                  type: "post",
+                  dataType: "html",
+                  data: '',
+
+                  success: function( data ){
+                    data = JSON.parse(data)
+                    console.log('Corrected!')
+                    console.log(data.result[0])
+                    console.log(data.result[1])
+
+                    type == 'file' ? file_lm = data.result[0] : record_lm = data.result[0]
+
+                    $(`#${type}-correct`).html(`Correcting ... <strong>DONE!</strong> (${data.result[1]} s)`)
+                    $(`#${type}-google`).html('Getting Google transcript ... ')
+
+                    $.ajax({
+                      url: `/google${type}`,
+                      type: "post",
+                      dataType: "html",
+                      data: '',
+
+                      success: function( data ){
+                        data = JSON.parse(data)
+                        console.log('Got Google transcript!')
+                        console.log(data.result[0])
+                        console.log(data.result[1])
+
+                        type == 'file' ? file_google = data.result[0] : record_google = data.result[0]
+
+                        $(`#${type}-google`).html(`Getting Google transcript ... <strong>DONE!</strong> (${data.result[1]} s)`)
+
+                        getResTable(type, 
+                                    type == 'file' ? file_wavenet : record_wavenet, 
+                                    type == 'file' ? file_lm : record_lm, 
+                                    type == 'file' ? file_google : record_google)
+
+                        clearInterval(type == 'file' ? fileInterval : recordInterval)
+                        type == 'file' ? fileTotalSeconds = 0 : recordTotalSeconds = 0
+                      },
+                      error: function(error) {
+                        console.log(error)
+                        getError(type)
+                      }
+                    })
+                  },
+                  error: function(error) {
+                    console.log(error)
+                    getError(type)
+                  }
+                })
+              },
+              error: function(error) {
+                console.log(error)
+                getError(type)
+              }
+            })
+          },
+          error: function(error) {
+            console.log(error)
+            getError(type)
+          }
+        })
+      }
 
       function getFileTime() {
         return fileTotalSeconds
@@ -215,74 +406,10 @@
       $("#recognize-file").submit(function( event ) {
         event.preventDefault()
 
-        $('#file-res').html(`
-          <div>
-            <div>Recognizing...</div>
-            <label id="file-minutes">00</label>:<label id="file-seconds">00</label>
-            <div class="progress">
-              <div 
-                class="progress-bar progress-bar-striped active" 
-                role="progressbar" 
-                aria-valuenow="100" 
-                aria-valuemin="0" 
-                aria-valuemax="100" 
-                style="width: 100%"
-              ></div>
-            </div>
-          </div>
-        `)
-
-        var minutesLabel = document.getElementById("file-minutes");
-        var secondsLabel = document.getElementById("file-seconds");
-        var fileInterval = setInterval(setFileTime, 1000);
-
-        function setFileTime() {
-          ++fileTotalSeconds;
-          secondsLabel.innerHTML = pad(fileTotalSeconds % 60);
-          minutesLabel.innerHTML = pad(parseInt(fileTotalSeconds / 60));
-        }
-
         var formdata = new FormData()
         formdata.append("file", file)
 
-        $.ajax({
-          url: "/",
-          type: "post",
-          dataType: "html",
-          data: formdata,
-          encode: true,
-          processData: false,
-          cache: false,
-          contentType: false,
-
-          success: function( data ){
-            data = JSON.parse(data)
-            console.log(data)
-            $('#file-res').html(`
-              <div>Elapsed time: ${pad(parseInt(getFileTime()/60))}:${pad(getFileTime()%60)}</div>
-              <div>
-                <table class="table table-bordered table-striped table-responsive table-hover" style="margin: 10px auto; width: 80%; text-align: center">
-                  <thead style="background-color: #32383e">
-                    <tr style="color: white">
-                      <th style="text-align: center" colspan="2">Result</th>
-                    </tr>
-                  </thead>
-
-                  <tbody>
-                    <tr><td style="width: 50%"><strong>Wavenet result</strong></td><td>${data.result[0]}</td></tr>
-                    <tr><td style="width: 50%"><strong>Corrected by Language Model</strong></td><td>${data.result[1]}</td></tr>
-                  </tbody>
-                </table>
-              </div>
-            `)
-            clearInterval(fileInterval)
-            fileTotalSeconds = 0
-          },
-          error: function(error) {
-            console.log(error)
-            $('#file-res').html('Error')
-          }
-        })
+        runMain('file', formdata)
       })
 
       navigator.getUserMedia = (  navigator.getUserMedia ||
@@ -416,75 +543,11 @@
 
       $("#recognize-record").submit(function( event ) {
         event.preventDefault()
-
-        $('#record-res').html(`
-          <div>
-            <div>Recognizing...</div>
-            <label id="record-minutes">00</label>:<label id="record-seconds">00</label>
-            <div class="progress">
-              <div 
-                class="progress-bar progress-bar-striped active" 
-                role="progressbar" 
-                aria-valuenow="100" 
-                aria-valuemin="0" 
-                aria-valuemax="100" 
-                style="width: 100%"
-              ></div>
-            </div>
-          </div>
-        `)
-
-        var minutesLabel = document.getElementById("record-minutes");
-        var secondsLabel = document.getElementById("record-seconds");
-        var recordInterval = setInterval(setRecordTime, 1000);
-
-        function setRecordTime() {
-          ++recordTotalSeconds;
-          secondsLabel.innerHTML = pad(recordTotalSeconds % 60);
-          minutesLabel.innerHTML = pad(parseInt(recordTotalSeconds / 60));
-        }
-
+        
         var formdata = new FormData()
         formdata.append('file', recordData)
 
-        $.ajax({
-          url: "/",
-          type: "post",
-          dataType: "html",
-          data: formdata,
-          encode: true,
-          processData: false,
-          cache: false,
-          contentType: false,
-
-          success: function( data ){
-            data = JSON.parse(data)
-            console.log(data)
-            $('#record-res').html(`
-              <div>Elapsed time: ${pad(parseInt(getRecordTime()/60))}:${pad(getRecordTime()%60)}</div>
-              <div>
-                <table class="table table-bordered table-striped table-responsive table-hover" style="margin: 10px auto; width: 80%; text-align: center">
-                  <thead style="background-color: #32383e">
-                    <tr style="color: white">
-                      <th style="text-align: center" colspan="2">Result</th>
-                    </tr>
-                  </thead>
-
-                  <tbody>
-                    <tr><td style="width: 50%"><strong>Wavenet result</strong></td><td>${data.result[0]}</td></tr>
-                    <tr><td style="width: 50%"><strong>Corrected by Language Model</strong></td><td>${data.result[1]}</td></tr>
-                  </tbody>
-                </table>
-              </div>
-            `)
-            clearInterval(recordInterval);
-            recordTotalSeconds = 0
-          },
-          error: function(error) {
-            console.log(error)
-            $('#record-res').html('Error')
-          }
-        })
+        runMain('record', formdata)
       })
     </script>
   </body>
