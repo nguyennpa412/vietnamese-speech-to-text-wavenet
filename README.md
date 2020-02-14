@@ -26,8 +26,6 @@
 2. **Processed data**:
     * Train set: 45182 samples ( > 41hrs) 
     * Test set: 5006 samples ( > 4hrs)
-    * [FINAL_DATA](https://drive.google.com/file/d/10R008Zz9q4K1AiQdv4aMbBTIKrFCRZpP/view?usp=sharing)
-    * [Preprocessed_data](https://drive.google.com/file/d/1fCQH4paGIKp6xJCU4zBJNznHZZsLH7-z/view?usp=sharing)
 3. **Scripts**:
     * `gather_data.py`: Gathering all data from above sets then rearranging and preprocessing them. After gathering, data will be stored in `/data processing/asset/data/FINAL_DATA` folder.
     * `preprocess.py`: Preprocessing gathered data to get mfcc features. After preprocessing, preprocessed data will be stored in `/data processing/asset/data/preprocess` folder.
